@@ -20,10 +20,8 @@ resource "google_dataform_repository" "martech_v9_repo" {
   ]
 }
 
-data "google_project" "project" {}
-
 locals {
-  dataform_sa = "service-${data.google_project.project.number}@gcp-sa-dataform.iam.gserviceaccount.com"
+  dataform_sa = "service-${var.project_number}@gcp-sa-dataform.iam.gserviceaccount.com"
 }
 
 resource "google_project_iam_member" "dataform_bigquery_editor" {

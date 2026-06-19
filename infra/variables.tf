@@ -1,6 +1,11 @@
 variable "project_id" {
   type        = string
-  description = "ID do projeto alvo no Google Cloud Platform injetado dinamicamente via branch"
+  description = "ID do projeto alvo no Google Cloud Platform configurado via pipeline"
+}
+
+variable "project_number" {
+  type        = string
+  description = "Numero unico identificador do projeto GCP fornecido pela esteira"
 }
 
 variable "service_region" {

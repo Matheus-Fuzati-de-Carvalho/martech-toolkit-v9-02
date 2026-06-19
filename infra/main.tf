@@ -16,10 +16,8 @@ provider "google" {
   region  = var.service_region
 }
 
-data "google_client_config" "current" {}
-
 locals {
-  project_id = data.google_client_config.current.project
+  project_id = var.project_id
   datasets = [
     var.silver_schema,
     var.refined_schema,
