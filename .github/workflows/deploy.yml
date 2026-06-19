@@ -34,13 +34,13 @@ jobs:
         run: |
           if [ "${{ github.ref_name }}" = "hom" ]; then
             echo "PROJECT_ID=toolkit-v9-02-hom" >> $GITHUB_ENV
-            echo "PROJECT_NUMBER=$(gcloud projects list --filter='projectId:toolkit-v9-02-hom' --format='value(projectNumber)')" >> $GITHUB_ENV
+            echo "PROJECT_NUMBER=166057030035" >> $GITHUB_ENV
             echo "NOTIFICATION_EMAIL=alerta-hom@empresa.com" >> $GITHUB_ENV
             echo "SMTP_USER=remetente-hom@gmail.com" >> $GITHUB_ENV
             echo "SMTP_PASS=senha-app-secreta-hom" >> $GITHUB_ENV
           else
             echo "PROJECT_ID=toolkit-v9-02-dev" >> $GITHUB_ENV
-            echo "PROJECT_NUMBER=$(gcloud projects list --filter='projectId:toolkit-v9-02-dev' --format='value(projectNumber)')" >> $GITHUB_ENV
+            echo "PROJECT_NUMBER=974735008572" >> $GITHUB_ENV
             echo "NOTIFICATION_EMAIL=alerta-dev@empresa.com" >> $GITHUB_ENV
             echo "SMTP_USER=remetente-dev@gmail.com" >> $GITHUB_ENV
             echo "SMTP_PASS=senha-app-secreta-dev" >> $GITHUB_ENV
