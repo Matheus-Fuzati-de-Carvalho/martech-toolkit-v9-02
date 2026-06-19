@@ -9,6 +9,9 @@ terraform {
       version = "~> 0.11"
     }
   }
+
+  # ADICIONE ESTE BLOCO ABAIXO:
+  backend "gcs" {}
 }
 
 provider "google" {

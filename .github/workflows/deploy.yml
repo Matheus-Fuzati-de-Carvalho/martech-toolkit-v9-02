@@ -62,7 +62,8 @@ jobs:
       - name: "5. Initialize Terraform Environment"
         run: |
           cd infra
-          terraform init -reconfigure
+          # CORREÇÃO: Conecta o Terraform ao Bucket de estado correspondente à branch/projeto
+          terraform init -reconfigure -backend-config="bucket=${PROJECT_ID}-tfstate"
 
       - name: "6. Execute Infrastructure Convergence"
         env:
