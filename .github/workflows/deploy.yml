@@ -11,6 +11,7 @@ on:
       - 'includes/**'
       - 'package.json'
       - 'workflow_settings.yaml'
+      - '.github/workflows/**' # CORREÇÃO: Permite disparar quando o proprio workflow for alterado
 
 permissions:
   contents: read
