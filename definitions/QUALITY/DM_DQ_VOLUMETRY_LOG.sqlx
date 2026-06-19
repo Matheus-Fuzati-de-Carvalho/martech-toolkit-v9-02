@@ -1,0 +1,37 @@
+config {
+    type: "incremental",
+    schema: data.quality_schema,
+    name: "DM_DQ_VOLUMETRY_LOG",
+    assertions: {
+        uniqueKey: ["table_name", "reference_date", "execution_date"]
+    },
+    description: "Quality Layer: Log historico de volumetria das tabelas Trusted.",
+    tags: ["quality", "monitoring", "full", "marketing", "retail"],
+    bigquery: {
+        labels: {
+            "layer": "quality"
+        }
+    }
+}
+
+SELECT
+    '${data.tab_ft_ga4}' AS table_name,
+    event_date AS reference_date,
+    COUNT(*) AS row_count,
+    CURRENT_TIMESTAMP() AS execution_date
+FROM
+    ${ref(data.tab_ft_ga4)}
+${when(incremental(), `WHERE event_date >= date_sub(current_date(), interval ${data.lookback_days} day)`) }
+GROUP BY 1, 2
+
+UNION ALL
+
+SELECT
+    '${data.tab_ft_ads}' AS table_name,
+    ad_date AS reference_date,
+    COUNT(*) AS row_count,
+    CURRENT_TIMESTAMP() AS execution_date
+FROM
+    ${ref(data.tab_ft_ads)}
+${when(incremental(), `WHERE ad_date >= date_sub(current_date(), interval ${data.lookback_days} day)`) }
+GROUP BY 1, 2

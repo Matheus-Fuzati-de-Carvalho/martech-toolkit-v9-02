@@ -1,0 +1,57 @@
+config {
+    type: "incremental",
+    schema: data.quality_schema,
+    name: "DM_DQ_FINOPS_COSTS",
+    description: "Quality Layer: FinOps resiliente a tabelas anonimas do Dataform.",
+    tags: ["quality", "finops", "full"],
+    bigquery: {
+        partitionBy: "usage_date",
+        labels: {
+            "layer": "quality"
+        }
+    }
+}
+
+WITH master_label_map AS (
+    SELECT table_name, option_value AS label_struct FROM `${data.project_id}.${data.silver_schema}.INFORMATION_SCHEMA.TABLE_OPTIONS` WHERE option_name = 'labels'
+    UNION ALL
+    SELECT table_name, option_value AS label_struct FROM `${data.project_id}.${data.refined_schema}.INFORMATION_SCHEMA.TABLE_OPTIONS` WHERE option_name = 'labels'
+    UNION ALL
+    SELECT table_name, option_value AS label_struct FROM `${data.project_id}.${data.quality_schema}.INFORMATION_SCHEMA.TABLE_OPTIONS` WHERE option_name = 'labels'
+),
+
+jobs_base AS (
+    SELECT
+        date(creation_time) AS usage_date,
+        job_id,
+        user_email,
+        COALESCE(
+            REGEXP_EXTRACT(query, r'(?:FROM|TABLE|INTO)\s+`?[^`.\s]+\.[^`.\s]+\.([^`.\s]+)`?'),
+            destination_table.table_id
+        ) AS real_table_name,
+        total_bytes_processed,
+        creation_time,
+        query
+    FROM
+        `${data.project_id}.region-${dataform.projectConfig.defaultLocation}.INFORMATION_SCHEMA.JOBS_BY_PROJECT`
+    WHERE
+        job_id LIKE 'dataform-%'
+        AND state = 'DONE'
+        AND creation_time > timestamp_sub(current_timestamp(), interval 1 day)
+)
+
+SELECT
+    j.usage_date,
+    j.job_id,
+    j.user_email,
+    j.real_table_name as table_name,
+    COALESCE(REGEXP_EXTRACT(m.label_struct, r'layer", "([^"]+)"'), 'SISTEMA/TEMP') AS layer_label,
+    j.total_bytes_processed,
+    COALESCE(SAFE_DIVIDE(j.total_bytes_processed, pow(1024, 4)) * 5, 0) AS estimated_cost_usd,
+    j.creation_time AS execution_timestamp
+FROM
+    jobs_base j
+LEFT JOIN
+    master_label_map m ON j.real_table_name = m.table_name
+
+${when(incremental(), `WHERE j.creation_time > (SELECT max(execution_timestamp) FROM ${self()})`)}

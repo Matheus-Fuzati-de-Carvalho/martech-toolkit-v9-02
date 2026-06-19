@@ -1,0 +1,39 @@
+config {
+    type: "incremental",
+    schema: data.silver_schema,
+    name: data.tab_ft_ads,
+    assertions: {
+        nonNull: ["ad_date", "campaign_id", "ads_cost"],
+        rowConditions: [
+            "ads_cost >= 0"
+        ]
+    },
+    description: "Trusted Layer: Performance de Ads normalizada com deduplicao e idempotencia.",
+    tags: ["silver", "ads", "trusted", "full", "marketing", "retail"],
+    bigquery: {
+        partitionBy: "ad_date",
+        labels: {
+            "layer": "silver"
+        },
+        clusterBy: ["campaign_id"],
+        updatePartitionFilter: `ad_date >= date_sub(current_date(), interval ${data.lookback_days} day)`
+    }
+}
+
+SELECT
+    _DATA_DATE AS ad_date,
+    ExternalCustomerId AS customer_id,
+    CampaignId AS campaign_id,
+    CampaignName AS campaign_name,
+    Clicks AS ads_clicks,
+    Impressions AS ads_impressions,
+    (Cost / 1000000) AS ads_cost,
+    to_hex(sha256(concat(cast(_DATA_DATE as string), cast(CampaignId as string)))) AS surrogate_key,
+    CURRENT_TIMESTAMP() AS atualization_date
+FROM
+    `${data.raw_ads_project}.${data.raw_ads_dataset}.${data.raw_ads_table}`
+
+QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY _DATA_DATE, CampaignId 
+    ORDER BY atualization_date DESC 
+) = 1

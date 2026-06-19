@@ -1,0 +1,8 @@
+{
+  "name": "martech-toolkit-v9-02",
+  "version": "9.0.0",
+  "description": "Prototipo de Data Warehouse - DP6",
+  "dependencies": {
+    "@dataform/core": "3.0.42"
+  }
+}

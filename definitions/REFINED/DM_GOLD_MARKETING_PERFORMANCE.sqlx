@@ -1,0 +1,44 @@
+config {
+    type: "table",
+    schema: data.refined_schema,
+    name: data.tab_dm_mkt,
+    assertions: {
+        uniqueKey: ["ad_date"]
+    },
+    description: "Refined Layer: Visao de Marketing consolidada por dia para calculo real de CPA e ROAS.",
+    tags: ["gold", "refined", "full", "marketing"],
+    bigquery: {
+        labels: {
+            "layer": "gold"
+        }
+    }
+}
+
+WITH ads_daily AS (
+    SELECT 
+        ad_date,
+        SUM(ads_clicks) as total_clicks,
+        SUM(ads_cost) as total_cost 
+    FROM ${ref(data.tab_ft_ads)} 
+    GROUP BY 1
+),
+ga4_daily AS (
+    SELECT 
+        event_date,
+        COUNT(DISTINCT ga_session_id) as total_sessions,
+        SUM(IF(event_name = 'purchase', 1, 0)) as total_conversions
+    FROM ${ref(data.tab_ft_ga4)} 
+    GROUP BY 1
+)
+
+SELECT 
+    a.ad_date,
+    a.total_clicks,
+    a.total_cost,
+    g.total_sessions,
+    g.total_conversions,
+    SAFE_DIVIDE(a.total_cost, g.total_conversions) as cpa,
+    SAFE_DIVIDE(g.total_conversions, g.total_sessions) as conversion_rate,
+    CURRENT_TIMESTAMP() as insertion_at
+FROM ads_daily a
+LEFT JOIN ga4_daily g ON a.ad_date = g.event_date

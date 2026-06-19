@@ -1,0 +1,13 @@
+defaultLocation: "US"
+defaultDataset: "REFINED"
+defaultAssertionDataset: "QUALITY_ASSERTIONS"
+
+vars:
+  flavor: "full"
+  silver_schema: "TRUSTED"
+  refined_schema: "REFINED"
+  quality_schema: "QUALITY"
+  raw_ga4_dataset: "RAW_SRC_GA4_EXTERNAL"
+  raw_ads_dataset: "RAW_SRC_ADS_EXTERNAL"
+  raw_ads_table: "ad_CampaignBasicStats_987654321"
+  lookback_days: "3"

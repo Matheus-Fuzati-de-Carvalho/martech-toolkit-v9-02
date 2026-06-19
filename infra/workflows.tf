@@ -1,0 +1,48 @@
+resource "google_service_account" "workflow_sa" {
+  account_id   = "martech-v9-workflow-sa"
+  display_name = "Workflow Service Account - Martech Toolkit v9"
+  project      = local.project_id
+}
+
+resource "google_project_iam_member" "workflow_dataform_editor" {
+  project = local.project_id
+  role    = "roles/dataform.editor"
+  member  = "serviceAccount:${google_service_account.workflow_sa.email}"
+}
+
+resource "google_project_iam_member" "workflow_invoker" {
+  project = local.project_id
+  role    = "roles/workflows.invoker"
+  member  = "serviceAccount:${google_service_account.workflow_sa.email}"
+}
+
+resource "google_workflows_workflow" "dataform_orchestrator" {
+  name            = "martech-v9-orchestrator"
+  region          = var.service_region
+  service_account = google_service_account.workflow_sa.id
+  project         = local.project_id
+
+  source_contents = templatefile("${path.module}/workflow_definition.yaml", {
+    project_id         = local.project_id
+    service_region     = var.service_region
+    repository         = google_dataform_repository.martech_v9_repo.id
+    notification_email = var.notification_email
+    flavor             = var.flavor
+    lookback_days      = var.lookback_days
+    raw_ga4_project    = local.project_id
+    raw_ga4_dataset    = var.raw_ga4_dataset
+    raw_ads_project    = local.project_id
+    raw_ads_dataset    = var.raw_ads_dataset
+    raw_ads_table      = var.raw_ads_table
+    silver_schema      = var.silver_schema
+    gold_schema        = var.refined_schema
+    quality_schema     = var.quality_schema
+    tab_ft_ga4         = var.tab_ft_ga4
+    tab_ft_ads         = var.tab_ft_ads
+    tab_dm_mkt         = var.tab_dm_mkt
+    tab_dm_retail      = var.tab_dm_retail
+    workspace_name     = "dev-workspace"
+  })
+
+  depends_on = [google_dataform_repository.martech_v9_repo]
+}

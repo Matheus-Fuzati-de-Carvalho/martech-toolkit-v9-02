@@ -1,0 +1,85 @@
+name: "Martech Toolkit v9 - Automated GitOps Engine"
+
+on:
+  push:
+    branches:
+      - dev
+      - hom
+    paths:
+      - 'infra/**'
+      - 'definitions/**'
+      - 'includes/**'
+      - 'package.json'
+      - 'workflow_settings.yaml'
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GCP_REGION: "us-central1"
+  GCP_DATA_LOCATION: "US"
+  GITHUB_ORGANIZATION_OR_USER: "Matheus-Fuzati-de-Carvalho"
+
+jobs:
+  deploy:
+    name: "Continuous GitOps Convergence"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "1. Checkout Source Code"
+        uses: actions/checkout@v4
+
+      - name: "2. Map Project Configuration from Branch Name"
+        id: env_mapping
+        run: |
+          if [ "${{ github.ref_name }}" = "hom" ]; then
+            echo "PROJECT_ID=toolkit-v9-02-hom" >> $GITHUB_ENV
+            echo "PROJECT_NUMBER=$(gcloud projects list --filter='projectId:toolkit-v9-02-hom' --format='value(projectNumber)')" >> $GITHUB_ENV
+            echo "NOTIFICATION_EMAIL=alerta-hom@empresa.com" >> $GITHUB_ENV
+            echo "SMTP_USER=remetente-hom@gmail.com" >> $GITHUB_ENV
+            echo "SMTP_PASS=senha-app-secreta-hom" >> $GITHUB_ENV
+          else
+            echo "PROJECT_ID=toolkit-v9-02-dev" >> $GITHUB_ENV
+            echo "PROJECT_NUMBER=$(gcloud projects list --filter='projectId:toolkit-v9-02-dev' --format='value(projectNumber)')" >> $GITHUB_ENV
+            echo "NOTIFICATION_EMAIL=alerta-dev@empresa.com" >> $GITHUB_ENV
+            echo "SMTP_USER=remetente-dev@gmail.com" >> $GITHUB_ENV
+            echo "SMTP_PASS=senha-app-secreta-dev" >> $GITHUB_ENV
+          fi
+
+      - name: "3. Authenticate to Google Cloud via WIF"
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/gh-pool/providers/gh-provider"
+          service_account: "gh-actions-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
+          create_credentials_file: true
+
+      - name: "4. Setup Terraform Core"
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: "5. Initialize Terraform Environment"
+        run: |
+          cd infra
+          terraform init -reconfigure
+
+      - name: "6. Execute Infrastructure Convergence"
+        env:
+          TF_VAR_service_region: "${{ env.GCP_REGION }}"
+          TF_VAR_data_location: "${{ env.GCP_DATA_LOCATION }}"
+          TF_VAR_git_token: "${{ secrets.GITHUB_TOKEN }}"
+          TF_VAR_notification_email: "${{ env.NOTIFICATION_EMAIL }}"
+          TF_VAR_email_user: "${{ env.SMTP_USER }}"
+          TF_VAR_email_password: "${{ env.SMTP_PASS }}"
+          TF_VAR_git_repo_url: "https://github.com/${{ env.GITHUB_ORGANIZATION_OR_USER }}/martech-toolkit-v9-02.git"
+        run: |
+          cd infra
+          export TF_VAR_project_id="$PROJECT_ID"
+          terraform plan -out=tfplan
+          terraform apply -auto-approve tfplan
+
+      - name: "7. Force Dataform Compilation Refresh"
+        run: |
+          gcloud workflows run martech-v9-orchestrator \
+            --project="$PROJECT_ID" \
+            --location="$GCP_REGION"

@@ -1,0 +1,31 @@
+config {
+    type: "table",
+    schema: data.refined_schema,
+    name: data.tab_dm_retail,
+    assertions: {
+        uniqueKey: ["ad_date", "brand", "category"],
+        nonNull: ["brand", "category"],
+        rowConditions: [
+            "investment >= 0 OR investment IS NULL"
+        ]
+    },
+    description: "Refined Layer: Cubo de Dados de Retail Media. Extrai Marca e Categoria do nome da campanha.",
+    tags: ["gold", "retail", "refined", "full"],
+    bigquery: {
+        labels: {
+            "layer": "gold"
+        }
+    }
+}
+
+SELECT
+    ad_date,
+    COALESCE(REGEXP_EXTRACT(campaign_name, r'^[^_]+_([^_]+)'), 'OUTROS') AS brand,
+    COALESCE(REGEXP_EXTRACT(campaign_name, r'^[^_]+_[^_]+_([^_]+)'), 'SEM_CATEGORIA') AS category,
+    SUM(ads_clicks) AS clicks,
+    SUM(ads_cost) AS investment,
+    SUM(ads_cost * 5.5) AS estimated_revenue,
+    SAFE_DIVIDE(SUM(ads_cost * 5.5), SUM(ads_cost)) as roas
+FROM
+    ${ref(data.tab_ft_ads)}
+GROUP BY 1, 2, 3

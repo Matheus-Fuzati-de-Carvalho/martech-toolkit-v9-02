@@ -1,0 +1,33 @@
+config {
+    type: "table",
+    schema: data.quality_schema,
+    name: "DM_DQ_DUPLICATE_AUDIT",
+    description: "Quality Layer: Validacao de unicidade das Surrogate Keys.",
+    tags: ["quality", "monitoring", "full", "marketing", "retail"],
+    bigquery: {
+        labels: {
+            "layer": "quality"
+        }
+    }
+}
+
+WITH base_audit AS (
+    SELECT 
+        '${data.tab_ft_ga4}' as table_name,
+        COUNT(surrogate_key) - COUNT(DISTINCT surrogate_key) as dup_count
+    FROM ${ref(data.tab_ft_ga4)}
+    
+    UNION ALL
+    
+    SELECT 
+        '${data.tab_ft_ads}' as table_name,
+        COUNT(surrogate_key) - COUNT(DISTINCT surrogate_key) as dup_count
+    FROM ${ref(data.tab_ft_ads)}
+)
+
+SELECT
+    table_name,
+    dup_count AS duplicated_keys_count,
+    CURRENT_TIMESTAMP() AS execution_date
+FROM
+    base_audit
