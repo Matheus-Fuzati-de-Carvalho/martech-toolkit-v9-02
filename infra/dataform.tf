@@ -4,9 +4,9 @@ resource "google_dataform_repository" "martech_v9_repo" {
   region   = var.service_region
   name     = "martech-toolkit-v9-02"
 
-  git_remote_settings {
+git_remote_settings {
     url                                 = var.git_repo_url
-    default_branch                      = "main"
+    default_branch                      = var.git_branch # CORREÇÃO: Dinâmico por ambiente
     authentication_token_secret_version = google_secret_manager_secret_version.git_token_version.id
   }
 

@@ -134,3 +134,8 @@ variable "email_password" {
   default     = "123456789"
   sensitive   = true
 }
+
+variable "git_branch" {
+  type        = string
+  description = "Branch correspondente ao ambiente atual (dev ou hom) injetada pelo pipeline"
+}

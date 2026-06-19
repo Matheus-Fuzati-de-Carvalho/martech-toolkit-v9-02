@@ -75,6 +75,7 @@ jobs:
           TF_VAR_email_password: "${{ env.SMTP_PASS }}"
           TF_VAR_git_repo_url: "https://github.com/${{ env.GITHUB_ORGANIZATION_OR_USER }}/martech-toolkit-v9-02.git"
           TF_VAR_project_number: "${{ env.PROJECT_NUMBER }}"
+          TF_VAR_git_branch: "${{ github.ref_name }}" # CORREÇÃO: Passa 'dev' ou 'hom' para o Terraform
         run: |
           cd infra
           export TF_VAR_project_id="$PROJECT_ID"
@@ -85,11 +86,13 @@ jobs:
         run: |
           echo "🏗️ Garantindo a existencia do dev-workspace no repositorio..."
           ACCESS_TOKEN=$(gcloud auth print-access-token)
-          curl -s -o /dev/null -w "%{http_code}" -X POST \
+          
+          # CORREÇÃO: Removeu-se o silenciador para expor mensagens de erro e mudou para a API v1 estável
+          curl -X POST \
             -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             -H "Content-Type: application/json" \
             -d '{}' \
-            "https://dataform.googleapis.com/v1beta1/projects/${PROJECT_ID}/locations/${GCP_REGION}/repositories/martech-toolkit-v9-02/workspaces?workspaceId=dev-workspace"
+            "https://dataform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${GCP_REGION}/repositories/martech-toolkit-v9-02/workspaces?workspaceId=dev-workspace"
 
       - name: "8. Force Dataform Compilation Refresh"
         run: |
