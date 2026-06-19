@@ -20,18 +20,6 @@ resource "google_dataform_repository" "martech_v9_repo" {
   ]
 }
 
-resource "google_dataform_repository_workspace" "dev_workspace" {
-  provider   = google-beta
-  project    = local.project_id
-  region     = var.service_region
-  repository = google_dataform_repository.martech_v9_repo.name
-  name       = "dev-workspace"
-
-  depends_on = [
-    google_dataform_repository.martech_v9_repo
-  ]
-}
-
 data "google_project" "project" {}
 
 locals {

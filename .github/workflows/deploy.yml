@@ -11,7 +11,7 @@ on:
       - 'includes/**'
       - 'package.json'
       - 'workflow_settings.yaml'
-      - '.github/workflows/**' # CORREÇÃO: Permite disparar quando o proprio workflow for alterado
+      - '.github/workflows/**'
 
 permissions:
   contents: read
@@ -79,7 +79,17 @@ jobs:
           terraform plan -out=tfplan
           terraform apply -auto-approve tfplan
 
-      - name: "7. Force Dataform Compilation Refresh"
+      - name: "7. Initialize Dataform Workspace"
+        run: |
+          echo "🏗️ Garantindo a existencia do dev-workspace no repositorio..."
+          ACCESS_TOKEN=$(gcloud auth print-access-token)
+          curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            "https://dataform.googleapis.com/v1beta1/projects/${PROJECT_ID}/locations/${GCP_REGION}/repositories/martech-toolkit-v9-02/workspaces?workspaceId=dev-workspace"
+
+      - name: "8. Force Dataform Compilation Refresh"
         run: |
           gcloud workflows run martech-v9-orchestrator \
             --project="$PROJECT_ID" \
