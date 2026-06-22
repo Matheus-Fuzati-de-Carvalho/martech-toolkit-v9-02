@@ -1,4 +1,4 @@
-name: "Martech Toolkit v9 - Automated GitOps Engine"
+name: "Martech Toolkit v9 - GitOps Engine"
 
 on:
   push:
